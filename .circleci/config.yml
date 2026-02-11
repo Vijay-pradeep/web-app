@@ -1,10 +1,15 @@
-<button onclick="callAPI()">Call API</button>
-<p id="res"></p>
+version: 2.1
 
-<script>
-async function callAPI() {
-  const r = await fetch("http://localhost:3000/api");
-  const d = await r.text();
-  document.getElementById("res").innerText = d;
-}
-</script>
+jobs:
+  build:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      - run: npm install
+      - run: npm test
+
+workflows:
+  build_and_test:
+    jobs:
+      - build

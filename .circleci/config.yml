@@ -1,0 +1,39 @@
+version: 2.1
+
+jobs:
+  build_and_deploy:
+    docker:
+      - image: google/cloud-sdk:latest
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Authenticate GCP
+          command: |
+            echo $GCLOUD_SERVICE_KEY > key.json
+            gcloud auth activate-service-account --key-file=key.json
+            gcloud config set project $PROJECT_ID
+            gcloud auth configure-docker
+
+      - run:
+          name: Build Image
+          command: |
+            docker build -t gcr.io/$PROJECT_ID/webapp:$CIRCLE_SHA1 .
+
+      - run:
+          name: Push Image
+          command: |
+            docker push gcr.io/$PROJECT_ID/webapp:$CIRCLE_SHA1
+
+      - run:
+          name: Deploy to GKE
+          command: |
+            gcloud container clusters get-credentials my-cluster --zone asia-south1-a
+            kubectl set image deployment/webapp webapp=gcr.io/$PROJECT_ID/webapp:$CIRCLE_SHA1
+
+workflows:
+  version: 2
+  pipeline:
+    jobs:
+      - build_and_deploy
